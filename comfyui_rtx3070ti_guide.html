@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComfyUI RTX 3070 Ti — Beginner Master Workflow Guide</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --orange: #ffa657;
+    --text: #e6edf3;
+    --muted: #8b949e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; padding: 24px; max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 2rem; color: var(--accent); margin-bottom: 6px; }
+  h2 { font-size: 1.3rem; margin: 24px 0 12px; color: var(--accent); }
+  h3 { font-size: 1rem; margin: 16px 0 8px; color: var(--orange); }
+  .subtitle { color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; margin-right: 6px; }
+  .badge-green { background: #1a3d1a; color: var(--green); border: 1px solid var(--green); }
+  .badge-blue { background: #1a2a4a; color: var(--accent); border: 1px solid var(--accent); }
+  .badge-red { background: #3d1a1a; color: var(--red); border: 1px solid var(--red); }
+  .badge-purple { background: #2a1a4a; color: var(--purple); border: 1px solid var(--purple); }
+  .badge-orange { background: #3d2a1a; color: var(--orange); border: 1px solid var(--orange); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .section-num { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.1rem; flex-shrink: 0; }
+  .s0 { background: #1a1a2e; color: #a0a0ff; border: 2px solid #4040aa; }
+  .s1 { background: #16213e; color: #7ab0ff; border: 2px solid #3060aa; }
+  .s2 { background: #0f3460; color: #80ccff; border: 2px solid #2080cc; }
+  .s3 { background: #162032; color: #90ccff; border: 2px solid #306090; }
+  .s4 { background: #1b2838; color: var(--green); border: 2px solid #2a7a2a; }
+  .s5 { background: #1a0533; color: var(--purple); border: 2px solid #6020aa; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .step { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+  .step-num { font-weight: 700; color: var(--accent); font-size: 0.85rem; margin-bottom: 4px; }
+  .step-node { font-family: 'Cascadia Code', 'Fira Code', monospace; background: #1c2128; padding: 3px 8px; border-radius: 4px; font-size: 0.82rem; color: var(--orange); margin-bottom: 6px; display: inline-block; }
+  .step-desc { font-size: 0.9rem; color: var(--muted); }
+  .tip { background: #1c2d1c; border-left: 3px solid var(--green); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 0.9rem; }
+  .warning { background: #2d1c1c; border-left: 3px solid var(--red); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 0.9rem; }
+  .info { background: #1c2438; border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 0.9rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th { background: #1c2128; color: var(--accent); padding: 8px 12px; text-align: left; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: #1c2128; }
+  code { font-family: 'Cascadia Code', 'Fira Code', monospace; background: #1c2128; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: var(--orange); }
+  .tag { display: inline-block; background: #1c2128; border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: 0.82rem; color: var(--muted); margin: 2px; }
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+  .flow-node { background: #1c2128; border: 1px solid var(--accent); border-radius: 6px; padding: 5px 12px; font-size: 0.82rem; color: var(--accent); white-space: nowrap; }
+  .flow-arrow { color: var(--muted); font-size: 1.2rem; }
+  .highlight { color: var(--yellow); font-weight: 600; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  .folder-tree { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85rem; background: #0d1117; padding: 16px; border-radius: 8px; border: 1px solid var(--border); line-height: 1.8; }
+  .folder { color: var(--yellow); }
+  .file-path { color: var(--muted); }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 4px; font-size: 0.92rem; }
+  .progress-steps { counter-reset: step; }
+  .progress-steps li { counter-increment: step; list-style: none; padding-left: 32px; position: relative; margin-bottom: 12px; }
+  .progress-steps li::before { content: counter(step); position: absolute; left: 0; top: 2px; background: var(--accent); color: #000; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<h1>🖥️ ComfyUI Master Workflow</h1>
+<p class="subtitle">RTX 3070 Ti (8GB VRAM) · 64GB RAM · Beginner-Friendly · Modular 5-Section Design</p>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
+  <span class="badge badge-green">✓ VRAM Optimized</span>
+  <span class="badge badge-blue">5 Workflow Sections</span>
+  <span class="badge badge-purple">AnimateDiff</span>
+  <span class="badge badge-orange">ReActor FaceSwap</span>
+  <span class="badge badge-blue">ControlNet OpenPose</span>
+  <span class="badge badge-green">LoRA Support</span>
+</div>
+
+<!-- QUICK START -->
+<div class="card">
+  <div class="section-header">
+    <div class="section-num s0">0</div>
+    <div>
+      <h2 style="margin:0">📖 Quick Start — Read This First</h2>
+      <p style="color:var(--muted);font-size:0.9rem">How to load and use the workflow</p>
+    </div>
+  </div>
+  <ol class="progress-steps">
+    <li>Install ComfyUI → <code>git clone https://github.com/comfyanonymous/ComfyUI</code></li>
+    <li>Install ComfyUI-Manager into <code>ComfyUI/custom_nodes/</code> → <code>git clone https://github.com/ltdrdata/ComfyUI-Manager</code></li>
+    <li>Launch ComfyUI: <code>python main.py --medvram</code> (best for 8GB VRAM)</li>
+    <li>Open browser at <code>http://127.0.0.1:8188</code></li>
+    <li>Click <strong>Manager</strong> → <strong>Install Custom Nodes</strong> → install all required nodes listed below</li>
+    <li>Download models and place them in the correct folders (see Folder Structure below)</li>
+    <li><strong>Drag the <code>.json</code> file into your ComfyUI browser window</strong> to load the workflow</li>
+    <li>Start with <span class="highlight">Section 4 (LoRA Usage)</span> — it's the simplest!</li>
+  </ol>
+  <div class="warning" style="margin-top:16px;">⚠️ <strong>Only run ONE section at a time</strong> to preserve VRAM. Right-click a group and select <strong>"Set Group Nodes as Muted"</strong> to disable sections you're not using.</div>
+</div>
+
+<!-- REQUIRED NODES -->
+<div class="card">
+  <h2>📦 Required Custom Nodes</h2>
+  <p style="color:var(--muted);font-size:0.9rem;margin-bottom:12px;">Install all of these via ComfyUI-Manager before using the workflow.</p>
+  <table>
+    <tr><th>Node Package</th><th>Used In</th><th>Install Name in Manager</th></tr>
+    <tr><td><code>ComfyUI-Manager</code></td><td>All sections</td><td><strong>Install first</strong> — enables all other installs</td></tr>
+    <tr><td><code>ComfyUI-ReActor</code></td><td>Sections 2 & 3</td><td>Search: <code>ReActor</code></td></tr>
+    <tr><td><code>comfyui_controlnet_aux</code></td><td>Section 3</td><td>Search: <code>controlnet aux</code></td></tr>
+    <tr><td><code>ComfyUI-AnimateDiff-Evolved</code></td><td>Section 5</td><td>Search: <code>AnimateDiff Evolved</code></td></tr>
+    <tr><td><code>ComfyUI-VideoHelperSuite</code></td><td>Section 5</td><td>Search: <code>VideoHelperSuite</code></td></tr>
+  </table>
+</div>
+
+<!-- SECTION 1: LORA TRAINING -->
+<div class="card">
+  <div class="section-header">
+    <div class="section-num s1">1</div>
+    <div>
+      <h2 style="margin:0">🎓 LoRA Training Setup</h2>
+      <p style="color:var(--muted);font-size:0.9rem">Configure Kohya_ss with these settings for your RTX 3070 Ti</p>
+    </div>
+  </div>
+  <div class="info">ℹ️ LoRA training happens <strong>outside ComfyUI</strong> using <a href="https://github.com/bmaltais/kohya_ss" style="color:var(--accent)">Kohya_ss GUI</a>. The workflow file contains reference notes for these settings.</div>
+  <br>
+  <table>
+    <tr><th>Setting</th><th>Recommended Value</th><th>Notes</th></tr>
+    <tr><td>Base Model</td><td><span class="highlight">SD 1.5 only</span></td><td>SDXL requires 12GB+ for training — avoid!</td></tr>
+    <tr><td>Network Rank (dim)</td><td><code>16</code> to <code>32</code></td><td>16 = smaller file, 32 = more detail. Start with 16.</td></tr>
+    <tr><td>Network Alpha</td><td><code>8</code> to <code>16</code></td><td>Usually half of rank. Start with 8.</td></tr>
+    <tr><td>Resolution</td><td><code>512x512</code></td><td>Safe for 8GB VRAM. Never exceed 768x768 for training.</td></tr>
+    <tr><td>Batch Size</td><td><code>1</code></td><td>⚠️ Keep at 1 for 8GB VRAM — always.</td></tr>
+    <tr><td>Learning Rate</td><td><code>0.0001</code> (1e-4)</td><td>Safe default. Lower = safer but slower.</td></tr>
+    <tr><td>Text Encoder LR</td><td><code>0.00005</code> (5e-5)</td><td>Half the main learning rate.</td></tr>
+    <tr><td>Scheduler</td><td><code>cosine_with_restarts</code></td><td>Smooth training curve.</td></tr>
+    <tr><td>Optimizer</td><td><code>AdamW8bit</code></td><td>⚠️ 8-bit Adam saves significant VRAM!</td></tr>
+    <tr><td>Epochs</td><td><code>10–15</code></td><td>~1500–3000 total steps for ~100 images.</td></tr>
+    <tr><td>Mixed Precision</td><td><code>fp16</code></td><td>Cuts VRAM usage significantly.</td></tr>
+    <tr><td>Training Images</td><td>20–100+</td><td>More = better. Must include caption .txt files.</td></tr>
+    <tr><td>Clip Skip</td><td><code>2</code> (anime) / <code>1</code> (realistic)</td><td>Match to target model style.</td></tr>
+  </table>
+  <div class="tip" style="margin-top:12px;">✅ After training, copy the output <code>.safetensors</code> file to <code>ComfyUI/models/loras/</code> and use it in Section 4!</div>
+</div>
+
+<!-- SECTION 2: FACESWAP + TEXT -->
+<div class="card">
+  <div class="section-header">
+    <div class="section-num s2">2</div>
+    <div>
+      <h2 style="margin:0">👤 FaceSwap + Text Prompting</h2>
+      <p style="color:var(--muted);font-size:0.9rem">Generate an image from text, then swap in a face reference</p>
+    </div>
+  </div>
+  <div class="flow">
+    <div class="flow-node">CheckpointLoader</div><div class="flow-arrow">→</div>
+    <div class="flow-node">Positive Prompt</div><div class="flow-arrow">+</div>
+    <div class="flow-node">Negative Prompt</div><div class="flow-arrow">→</div>
+    <div class="flow-node">EmptyLatentImage</div><div class="flow-arrow">→</div>
+    <div class="flow-node">KSampler</div><div class="flow-arrow">→</div>
+    <div class="flow-node">VAEDecode</div><div class="flow-arrow">→</div>
+    <div class="flow-node">ReActorFaceSwap</div><div class="flow-arrow">→</div>
+    <div class="flow-node">SaveImage</div>
+  </div>
+  <div class="grid" style="margin-top:12px;">
+    <div class="step">
+      <div class="step-num">S2-STEP 1</div>
+      <div class="step-node">CheckpointLoaderSimple</div>
+      <p class="step-desc">Load your base model from <code>ComfyUI/models/checkpoints/</code>. Try <em>realisticVisionV60</em> for portraits.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">S2-STEP 2 & 3</div>
+      <div class="step-node">CLIPTextEncode × 2</div>
+      <p class="step-desc">Positive = what you want. Negative = what to avoid. Green node = positive, Red = negative.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">S2-STEP 4</div>
+      <div class="step-node">EmptyLatentImage</div>
+      <p class="step-desc">Set size: <strong>512×768</strong> for portrait, <strong>512×512</strong> for square. Keep total pixels ≤ 768×768.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">S2-STEP 5</div>
+      <div class="step-node">KSampler</div>
+      <p class="step-desc">steps=20, cfg=7, euler+normal. Change seed for different results.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">S2-STEP 6</div>
+      <div class="step-node">VAEDecode</div>
+      <p class="step-desc">Converts latent space data into a visible image.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">S2-STEP 7</div>
+      <div class="step-node">LoadImage</div>
+      <p class="step-desc">Upload your face reference photo here. Use a clear, front-facing photo for best results.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">S2-STEP 8</div>
+      <div class="step-node">ReActorFaceSwap</div>
+      <p class="step-desc">Swaps the face. Requires <code>inswapper_128.onnx</code> in <code>ComfyUI/models/insightface/</code>.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">S2-STEP 9</div>
+      <div class="step-node">SaveImage</div>
+      <p class="step-desc">Saves final result to <code>ComfyUI/output/S2_FaceSwap_Output/</code>.</p>
+    </div>
+  </div>
+  <div class="warning">⚠️ ReActor requires: <code>inswapper_128.onnx</code> + <code>codeformer.pth</code> or <code>GFPGANv1.4.pth</code> — see folder structure below.</div>
+</div>
+
+<!-- SECTION 3: FACESWAP + POSE -->
+<div class="card">
+  <div class="section-header">
+    <div class="section-num s3">3</div>
+    <div>
+      <h2 style="margin:0">🕴️ FaceSwap + Pose Reference</h2>
+      <p style="color:var(--muted);font-size:0.9rem">Control body pose with OpenPose ControlNet, then apply a face swap</p>
+    </div>
+  </div>
+  <div class="flow">
+    <div class="flow-node">Load Pose Image</div><div class="flow-arrow">→</div>
+    <div class="flow-node">DWPreprocessor</div><div class="flow-arrow">→</div>
+    <div class="flow-node">ControlNetLoader</div><div class="flow-arrow">→</div>
+    <div class="flow-node">ControlNetApply</div><div class="flow-arrow">→</div>
+    <div class="flow-node">KSampler</div><div class="flow-arrow">→</div>
+    <div class="flow-node">VAEDecode</div><div class="flow-arrow">→</div>
+    <div class="flow-node">ReActorFaceSwap</div><div class="flow-arrow">→</div>
+    <div class="flow-node">SaveImage</div>
+  </div>
+  <div class="info" style="margin-top:12px;">ℹ️ <strong>DWPreprocessor</strong> (from comfyui_controlnet_aux) extracts a body skeleton from any photo. This skeleton guides the AI to generate a body in that exact pose.</div>
+  <div class="tip">✅ Use ControlNet strength = <strong>1.0</strong> for exact pose match. Lower to <strong>0.7</strong> for looser/more creative interpretation.</div>
+  <div class="tip">✅ Required model: <code>control_v11p_sd15_openpose.pth</code> in <code>ComfyUI/models/controlnet/</code></div>
+</div>
+
+<!-- SECTION 4: LORA USAGE -->
+<div class="card" style="border-color: var(--green);">
+  <div class="section-header">
+    <div class="section-num s4">4</div>
+    <div>
+      <h2 style="margin:0;color:var(--green)">✨ LoRA Usage — START HERE! ← Recommended for beginners</h2>
+      <p style="color:var(--muted);font-size:0.9rem">Simple text-to-image with LoRA style loading</p>
+    </div>
+  </div>
+  <div class="flow">
+    <div class="flow-node">CheckpointLoader</div><div class="flow-arrow">→</div>
+    <div class="flow-node">LoraLoader</div><div class="flow-arrow">→</div>
+    <div class="flow-node">Pos/Neg Prompts</div><div class="flow-arrow">→</div>
+    <div class="flow-node">KSampler</div><div class="flow-arrow">→</div>
+    <div class="flow-node">VAEDecode</div><div class="flow-arrow">→</div>
+    <div class="flow-node">SaveImage</div>
+  </div>
+  <br>
+  <table>
+    <tr><th>LoraLoader Setting</th><th>Value</th><th>Effect</th></tr>
+    <tr><td>LoRA File</td><td>Your .safetensors file</td><td>Place in <code>ComfyUI/models/loras/</code></td></tr>
+    <tr><td>Model Strength</td><td><code>0.8</code></td><td>How strongly LoRA affects the image. 0.5–0.9 is the sweet spot.</td></tr>
+    <tr><td>CLIP Strength</td><td><code>0.8</code></td><td>How strongly LoRA influences text understanding. Match model strength.</td></tr>
+  </table>
+  <div class="tip" style="margin-top:12px;">✅ Add the LoRA trigger word to your positive prompt! (e.g. if LoRA is for "ghibli style", add "ghibli style" to your prompt)</div>
+  <div class="tip">✅ Chain multiple LoRAs: <code>Checkpoint → LoRA1 → LoRA2 → LoRA3 → Prompts</code>. Keep combined strength ≤ 1.5.</div>
+</div>
+
+<!-- SECTION 5: ANIMATION -->
+<div class="card">
+  <div class="section-header">
+    <div class="section-num s5">5</div>
+    <div>
+      <h2 style="margin:0;color:var(--purple)">🎞️ GIF / Animation (AnimateDiff)</h2>
+      <p style="color:var(--muted);font-size:0.9rem">Generate short animated GIFs from text prompts</p>
+    </div>
+  </div>
+  <div class="flow">
+    <div class="flow-node">CheckpointLoader</div><div class="flow-arrow">→</div>
+    <div class="flow-node">ADE_AnimateDiffLoader</div><div class="flow-arrow">→</div>
+    <div class="flow-node">Pos/Neg Prompts</div><div class="flow-arrow">→</div>
+    <div class="flow-node">EmptyLatent (16 frames)</div><div class="flow-arrow">→</div>
+    <div class="flow-node">KSampler</div><div class="flow-arrow">→</div>
+    <div class="flow-node">VAEDecode</div><div class="flow-arrow">→</div>
+    <div class="flow-node">ADE_AnimateDiffCombine</div>
+  </div>
+  <br>
+  <table>
+    <tr><th>Setting</th><th>Value</th><th>Notes</th></tr>
+    <tr><td>Motion Model</td><td><code>mm_sd_v15_v2.ckpt</code></td><td>Place in <code>ComfyUI-AnimateDiff-Evolved/models/</code></td></tr>
+    <tr><td>Frame Count</td><td><code>16</code></td><td>⚠️ MAX 16 frames on 8GB VRAM. Use 8 if OOM errors occur.</td></tr>
+    <tr><td>Resolution</td><td><code>512×512</code></td><td>⚠️ ONLY 512×512 for animation. Do not go higher.</td></tr>
+    <tr><td>GIF FPS</td><td><code>8</code></td><td>Smooth enough. Try 12 for smoother but larger files.</td></tr>
+    <tr><td>KSampler Steps</td><td><code>20</code></td><td>Good quality/speed balance for animation.</td></tr>
+    <tr><td>Sampler</td><td><code>euler + normal</code></td><td>Stable for animation. dpmpp_2m can cause flickering.</td></tr>
+  </table>
+  <div class="warning" style="margin-top:12px;">⚠️ If you get Out-of-Memory: Reduce frames to 8 → Reduce resolution to 512×512 → Close other GPU apps → Launch with <code>--lowvram</code></div>
+  <div class="tip">✅ Use motion words in your prompt: "walking", "flowing hair", "waving", "gentle breeze" — AnimateDiff responds to them!</div>
+</div>
+
+<!-- RECOMMENDED MODELS -->
+<div class="card">
+  <h2>🤖 Recommended Models</h2>
+  <table>
+    <tr><th>Type</th><th>Model Name</th><th>Where to Download</th></tr>
+    <tr><td>Checkpoint (Realistic)</td><td>Realistic Vision v6</td><td>CivitAI: <code>realisticVisionV60B1_v51VAE.safetensors</code></td></tr>
+    <tr><td>Checkpoint (General)</td><td>DreamShaper 8</td><td>CivitAI: <code>dreamshaper_8.safetensors</code></td></tr>
+    <tr><td>Checkpoint (Realistic Alt)</td><td>epiCRealism</td><td>CivitAI: <code>epicrealism_naturalSinRC1VAE.safetensors</code></td></tr>
+    <tr><td>VAE</td><td>vae-ft-mse-840000</td><td>HuggingFace: <code>vae-ft-mse-840000-ema-pruned.safetensors</code></td></tr>
+    <tr><td>ControlNet Pose</td><td>control_v11p_sd15_openpose</td><td>HuggingFace: lllyasviel/ControlNet-v1-1</td></tr>
+    <tr><td>FaceSwap Engine</td><td>inswapper_128.onnx</td><td>GitHub: Gourieff/ComfyUI-ReActor releases</td></tr>
+    <tr><td>Face Restore</td><td>codeformer.pth</td><td>GitHub: sczhou/CodeFormer</td></tr>
+    <tr><td>AnimateDiff Motion</td><td>mm_sd_v15_v2.ckpt</td><td>HuggingFace: guoyww/animatediff-motion-adapter-v1-5-2</td></tr>
+    <tr><td>LoRA Trainer</td><td>Kohya_ss SD-Scripts</td><td>GitHub: bmaltais/kohya_ss</td></tr>
+  </table>
+</div>
+
+<!-- FOLDER STRUCTURE -->
+<div class="card">
+  <h2>📁 Recommended Folder Structure</h2>
+  <div class="folder-tree">
+<span class="folder">ComfyUI/</span>
+├── <span class="folder">models/</span>
+│   ├── <span class="folder">checkpoints/</span>    <span class="file-path">← .safetensors base models go here</span>
+│   ├── <span class="folder">loras/</span>           <span class="file-path">← LoRA .safetensors files go here</span>
+│   ├── <span class="folder">vae/</span>             <span class="file-path">← VAE models go here</span>
+│   ├── <span class="folder">controlnet/</span>      <span class="file-path">← ControlNet .pth/.safetensors files</span>
+│   ├── <span class="folder">insightface/</span>     <span class="file-path">← inswapper_128.onnx + buffalo_l folder</span>
+│   └── <span class="folder">facerestore_models/</span> <span class="file-path">← codeformer.pth, GFPGANv1.4.pth</span>
+│
+├── <span class="folder">custom_nodes/</span>
+│   ├── <span class="folder">ComfyUI-Manager/</span>
+│   ├── <span class="folder">ComfyUI-ReActor/</span>
+│   ├── <span class="folder">comfyui_controlnet_aux/</span>
+│   ├── <span class="folder">ComfyUI-AnimateDiff-Evolved/</span>
+│   │   └── <span class="folder">models/</span>        <span class="file-path">← AnimateDiff motion models (.ckpt) go here</span>
+│   └── <span class="folder">ComfyUI-VideoHelperSuite/</span>
+│
+├── <span class="folder">input/</span>               <span class="file-path">← Put reference images, face photos here</span>
+└── <span class="folder">output/</span>              <span class="file-path">← All generated images/GIFs saved here</span>
+
+<span class="folder">lora_training/</span>         <span class="file-path">← Outside ComfyUI (for Kohya_ss)</span>
+├── <span class="folder">dataset/</span>             <span class="file-path">← Training images + caption .txt files</span>
+│   └── <span class="folder">my_character_10/</span>   <span class="file-path">← "10" = number of repeats per epoch</span>
+└── <span class="folder">output/</span>              <span class="file-path">← Trained LoRA .safetensors files</span>
+  </div>
+</div>
+
+<!-- VRAM TIPS -->
+<div class="card">
+  <h2>💡 VRAM Saving Tips for RTX 3070 Ti (8GB)</h2>
+  <div class="grid">
+    <div>
+      <div class="tip">🚀 Launch ComfyUI with: <code>python main.py --medvram</code><br>Use <code>--lowvram</code> if still getting OOM errors.</div>
+      <div class="tip">📐 Keep resolution at <strong>512×512</strong> or <strong>512×768</strong> for SD 1.5. Never use SDXL without <code>--lowvram</code>.</div>
+      <div class="tip">📦 Keep batch_size = <strong>1</strong> always. VRAM multiplies with batch size.</div>
+      <div class="tip">🎞️ AnimateDiff: max <strong>16 frames</strong> at 512×512. Reduce to 8 if needed.</div>
+    </div>
+    <div>
+      <div class="tip">🔧 Enable <strong>VAE Tiling</strong> in ComfyUI settings (gear icon) for upscaling large images.</div>
+      <div class="tip">🎮 Close Chrome, Discord, games, and other GPU apps before running heavy workflows.</div>
+      <div class="tip">🔄 Only run <strong>ONE section at a time</strong>. Mute/disable inactive groups.</div>
+      <div class="tip">🧠 Use <code>fp16</code> ControlNet models — they use ~half the VRAM of full precision.</div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;color:var(--muted);font-size:0.85rem;margin-top:32px;padding-top:16px;border-top:1px solid var(--border);">
+  Generated by Arena.ai Agent Mode · ComfyUI RTX 3070 Ti Master Workflow · 2026
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1084 @@
+{
+  "_WORKFLOW_INFO": {
+    "name": "RTX 3070 Ti Beginner Master Workflow",
+    "version": "1.0.0",
+    "author": "Arena.ai ComfyUI Assistant",
+    "gpu_target": "NVIDIA GeForce RTX 3070 Ti (8GB VRAM)",
+    "system_ram": "64GB",
+    "comfyui_compatibility": "ComfyUI v0.3+ (2025)",
+    "description": "A modular, beginner-friendly ComfyUI workflow with 5 clearly labeled sections. Each section is color-coded and grouped. Read the BEGINNER_GUIDE group first!",
+    "sections": [
+      "SECTION 0 — BEGINNER GUIDE & SETUP NOTES",
+      "SECTION 1 — LoRA TRAINING (Kohya-style config reference)",
+      "SECTION 2 — FACESWAP + TEXT PROMPTING",
+      "SECTION 3 — FACESWAP + POSE REFERENCE (ControlNet OpenPose)",
+      "SECTION 4 — LoRA USAGE (Text-to-Image with LoRA)",
+      "SECTION 5 — GIF / ANIMATION (AnimateDiff)"
+    ],
+    "required_custom_nodes": [
+      "ComfyUI-Manager (install first!) — https://github.com/ltdrdata/ComfyUI-Manager",
+      "ComfyUI-ReActor — https://github.com/Gourieff/ComfyUI-ReActor (FaceSwap)",
+      "comfyui_controlnet_aux — https://github.com/Fannovel16/comfyui_controlnet_aux (OpenPose/ControlNet preprocessors)",
+      "ComfyUI-AnimateDiff-Evolved — https://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved (Animation/GIF)",
+      "ComfyUI-VideoHelperSuite — https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite (GIF export)",
+      "ComfyUI_IPAdapter_plus — https://github.com/cubiq/ComfyUI_IPAdapter_plus (optional, face enhancement)"
+    ],
+    "recommended_models": {
+      "checkpoint_sd15": "Realistic Vision v6 (realisticVisionV60B1_v51VAE.safetensors) — great for portraits",
+      "checkpoint_sd15_anime": "DreamShaper 8 (dreamshaper_8.safetensors) — great general purpose",
+      "checkpoint_sd15_alt": "epiCRealism (epicrealism_naturalSinRC1VAE.safetensors)",
+      "vae": "vae-ft-mse-840000-ema-pruned.safetensors — standard VAE",
+      "controlnet_openpose": "control_v11p_sd15_openpose.pth — from lllyasviel/ControlNet-v1-1",
+      "faceswap_model": "inswapper_128.onnx — required by ReActor",
+      "face_restore": "codeformer.pth OR GFPGANv1.4.pth",
+      "animatediff_motion": "mm_sd_v15_v2.ckpt OR animatediff_lightning_4step_comfyui.safetensors",
+      "lora_trainer": "Kohya_ss SD-Scripts (https://github.com/kohya-ss/sd-scripts) — recommended for training"
+    },
+    "vram_saving_tips": [
+      "TIP 1: Enable 'Enable VAE Tiling' in ComfyUI settings for large images",
+      "TIP 2: Use --lowvram flag when launching ComfyUI: 'python main.py --lowvram'",
+      "TIP 3: Keep image resolution at 512x512 or 512x768 for SD 1.5 models",
+      "TIP 4: Use batch_size=1 always when VRAM is tight",
+      "TIP 5: Use --medvram if --lowvram is too slow (good middle ground for 8GB)",
+      "TIP 6: Close all other GPU-heavy apps (games, browsers with hardware accel) before running",
+      "TIP 7: For AnimateDiff keep frame count at 16 max. Use context windows for longer clips",
+      "TIP 8: For ControlNet, use fp16 versions of ControlNet models",
+      "TIP 9: Unload models between sections using the 'Free Memory' approach or restart between heavy tasks",
+      "TIP 10: SDXL models require ~6-8GB VRAM alone — avoid SDXL unless using --lowvram"
+    ],
+    "folder_structure": {
+      "ComfyUI/models/checkpoints/": "Place .safetensors or .ckpt model files here",
+      "ComfyUI/models/loras/": "Place LoRA .safetensors files here",
+      "ComfyUI/models/vae/": "Place VAE .safetensors files here",
+      "ComfyUI/models/controlnet/": "Place ControlNet .pth or .safetensors files here",
+      "ComfyUI/models/insightface/": "Place inswapper_128.onnx and buffalo_l here (for ReActor)",
+      "ComfyUI/models/facerestore_models/": "Place codeformer.pth and GFPGANv1.4.pth here",
+      "ComfyUI/custom_nodes/ComfyUI-AnimateDiff-Evolved/models/": "Place AnimateDiff motion models here",
+      "ComfyUI/input/": "Place reference images, face images, pose images here",
+      "ComfyUI/output/": "All generated images and GIFs saved here",
+      "lora_training/dataset/": "Place training images here (outside ComfyUI folder)",
+      "lora_training/output/": "Trained LoRA files saved here"
+    },
+    "install_instructions": [
+      "STEP 1: Install ComfyUI — git clone https://github.com/comfyanonymous/ComfyUI",
+      "STEP 2: Install ComfyUI-Manager — git clone https://github.com/ltdrdata/ComfyUI-Manager into ComfyUI/custom_nodes/",
+      "STEP 3: Launch ComfyUI: python main.py --gpu-only  (or use run_nvidia_gpu.bat on Windows)",
+      "STEP 4: Open browser at http://127.0.0.1:8188",
+      "STEP 5: Click 'Manager' button → 'Install Custom Nodes' → Search and install each required node listed above",
+      "STEP 6: Download models and place them in correct folders (see folder_structure above)",
+      "STEP 7: Drag this workflow JSON file into the ComfyUI browser window to load it",
+      "STEP 8: Start with SECTION 4 (LoRA Usage) as it is the simplest. Then explore other sections.",
+      "STEP 9: For LoRA training, use Kohya_ss separately — see SECTION 1 notes in this file"
+    ]
+  },
+
+  "last_node_id": 120,
+  "last_link_id": 200,
+
+  "groups": [
+    {
+      "title": "📖 SECTION 0 — BEGINNER GUIDE (READ THIS FIRST!)",
+      "bounding": [0, 0, 900, 400],
+      "color": "#1a1a2e",
+      "font_size": 18,
+      "locked": false
+    },
+    {
+      "title": "🎓 SECTION 1 — LoRA TRAINING SETUP (Kohya Reference + ComfyUI Prep)",
+      "bounding": [0, 450, 1400, 600],
+      "color": "#16213e",
+      "font_size": 16,
+      "locked": false
+    },
+    {
+      "title": "👤 SECTION 2 — FACESWAP + TEXT PROMPTING",
+      "bounding": [0, 1100, 1800, 700],
+      "color": "#0f3460",
+      "font_size": 16,
+      "locked": false
+    },
+    {
+      "title": "🕴️ SECTION 3 — FACESWAP + POSE REFERENCE (ControlNet OpenPose)",
+      "bounding": [0, 1850, 2200, 750],
+      "color": "#162032",
+      "font_size": 16,
+      "locked": false
+    },
+    {
+      "title": "✨ SECTION 4 — LoRA USAGE (Text-to-Image with LoRA) ← START HERE",
+      "bounding": [0, 2650, 1600, 600],
+      "color": "#1b2838",
+      "font_size": 16,
+      "locked": false
+    },
+    {
+      "title": "🎞️ SECTION 5 — GIF / ANIMATION (AnimateDiff)",
+      "bounding": [0, 3300, 1800, 700],
+      "color": "#1a0533",
+      "font_size": 16,
+      "locked": false
+    }
+  ],
+
+  "nodes": [
+
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [20, 20],
+      "size": {"0": 860, "1": 380},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": {"Node name for S&R": "Note"},
+      "widgets_values": ["🚀 WELCOME — RTX 3070 Ti ComfyUI Master Workflow\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 HOW TO USE THIS WORKFLOW:\n1. Each colored group = one workflow section (use them independently)\n2. DISABLE sections you're not using: Right-click group → 'Set Group Nodes as Muted'\n3. Only run ONE section at a time to save VRAM on your RTX 3070 Ti\n\n📦 WHAT YOU NEED FIRST:\n• ComfyUI installed and running\n• ComfyUI-Manager installed (to add custom nodes)\n• Models downloaded and placed in correct folders\n• See _WORKFLOW_INFO at the top of this JSON for full details\n\n🟢 RECOMMENDED STARTING ORDER FOR BEGINNERS:\n① Start with SECTION 4 (LoRA Usage) — simplest, just text-to-image\n② Try SECTION 2 (FaceSwap + Text) — add a face reference\n③ Try SECTION 5 (Animation) — make GIFs\n④ Try SECTION 3 (FaceSwap + Pose) — most advanced\n⑤ Read SECTION 1 (LoRA Training) — for creating your own styles\n\n⚠️ VRAM WARNING: This 3070 Ti has 8GB. Keep resolution at 512x512 or 512x768!\nLaunch ComfyUI with: python main.py --medvram   for best balance of speed/VRAM"],
+      "color": "#1a1a2e",
+      "bgcolor": "#16213e"
+    },
+
+    {
+      "id": 2,
+      "type": "Note",
+      "pos": [20, 470],
+      "size": {"0": 1360, "1": 560},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": {"Node name for S&R": "Note"},
+      "widgets_values": ["🎓 SECTION 1 — LoRA TRAINING REFERENCE\n\nLoRA training happens OUTSIDE ComfyUI using Kohya_ss SD-Scripts.\nThis section gives you the recommended settings for your RTX 3070 Ti.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📥 INSTALL KOHYA_SS: https://github.com/bmaltais/kohya_ss\n   OR use the simpler EveryDream2 trainer for beginners.\n\n⚙️ RECOMMENDED TRAINING SETTINGS (RTX 3070 Ti, 8GB VRAM):\n\n   Base Model:          SD 1.5 (NOT SDXL — too heavy for 8GB training)\n   Network Type:        LoRA\n   Network Rank (dim):  16 to 32  (16 = smaller file, 32 = more detail. Start with 16)\n   Network Alpha:       8 to 16   (usually half of rank. Start with 8)\n   Resolution:          512x512   (safe for 8GB VRAM. Never exceed 768x768 for training)\n   Batch Size:          1         (IMPORTANT: keep at 1 for 8GB VRAM. Never go higher)\n   Learning Rate:       0.0001    (1e-4 for LoRA. Safe default for beginners)\n   Text Encoder LR:     0.00005   (5e-5. Half of main LR is safe)\n   Scheduler:           cosine_with_restarts\n   Optimizer:           AdamW8bit  (IMPORTANT: use 8-bit Adam to save VRAM)\n   Steps/Epochs:        10-15 epochs OR ~1500-3000 steps for ~100 training images\n   Training Images:     20-50 high quality images minimum. 100+ for best results.\n   Repeats:             10-20 repeats per image (so total steps = images × repeats × epochs)\n   Mixed Precision:     fp16  (saves VRAM significantly)\n   Save every N epochs: 1     (so you can test intermediate checkpoints)\n   Clip Skip:           2     (for anime style) or 1 (for realistic)\n\n📁 TRAINING IMAGE TIPS:\n   • Crop all images to 512x512 (use Birme.net for batch cropping)\n   • Write a caption .txt file for each image (use WD14 tagger for auto-captions)\n   • Use a trigger word in every caption: e.g. 'mycharacter, woman, red hair, ...'\n   • Remove unwanted words from captions that describe the style you're learning\n\n📁 PLACE TRAINED LoRA: Copy output .safetensors to ComfyUI/models/loras/\n   Then use it in SECTION 4 of this workflow!\n\n⚠️ NOTE: LoRA training is NOT done inside ComfyUI nodes. Use Kohya_ss GUI separately.\n   The ComfyUI nodes below are for USING LoRAs, not training them."],
+      "color": "#16213e",
+      "bgcolor": "#1a2a4a"
+    },
+
+    {
+      "id": 10,
+      "type": "CheckpointLoaderSimple",
+      "pos": [20, 1120],
+      "size": {"0": 315, "1": 98},
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [101], "slot_index": 0},
+        {"name": "CLIP", "type": "CLIP", "links": [102, 103], "slot_index": 1},
+        {"name": "VAE", "type": "VAE", "links": [104], "slot_index": 2}
+      ],
+      "properties": {"Node name for S&R": "CheckpointLoaderSimple"},
+      "widgets_values": ["realisticVisionV60B1_v51VAE.safetensors"],
+      "color": "#222",
+      "bgcolor": "#333",
+      "title": "🔵 [S2-STEP1] Load Checkpoint Model"
+    },
+
+    {
+      "id": 11,
+      "type": "Note",
+      "pos": [20, 1080],
+      "size": {"0": 600, "1": 30},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": {"Node name for S&R": "Note"},
+      "widgets_values": ["⬇️ SECTION 2 START: FaceSwap + Text Prompting — Run nodes top to bottom in the order labeled [S2-STEP1] through [S2-STEP8]"],
+      "color": "#0f3460",
+      "bgcolor": "#1a4a80"
+    },
+
+    {
+      "id": 12,
+      "type": "CLIPTextEncode",
+      "pos": [355, 1120],
+      "size": {"0": 425, "1": 180},
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [{"name": "clip", "type": "CLIP", "link": 102}],
+      "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [105], "slot_index": 0}],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": ["beautiful woman, 30 years old, professional portrait, studio lighting, sharp focus, high quality, 8k photo, realistic skin texture, elegant"],
+      "color": "#1a4400",
+      "bgcolor": "#234d00",
+      "title": "🟢 [S2-STEP2] POSITIVE PROMPT — Describe what you want to generate here"
+    },
+
+    {
+      "id": 13,
+      "type": "CLIPTextEncode",
+      "pos": [355, 1320],
+      "size": {"0": 425, "1": 180},
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [{"name": "clip", "type": "CLIP", "link": 103}],
+      "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [106], "slot_index": 0}],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": ["ugly, deformed, blurry, bad anatomy, extra fingers, mutated hands, watermark, signature, low quality, worst quality, jpeg artifacts, duplicate, morbid, poorly drawn face, bad proportions"],
+      "color": "#440000",
+      "bgcolor": "#6b0000",
+      "title": "🔴 [S2-STEP3] NEGATIVE PROMPT — What to AVOID. These are safe defaults, don't change unless needed"
+    },
+
+    {
+      "id": 14,
+      "type": "EmptyLatentImage",
+      "pos": [800, 1120],
+      "size": {"0": 315, "1": 106},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "outputs": [{"name": "LATENT", "type": "LATENT", "links": [107], "slot_index": 0}],
+      "properties": {"Node name for S&R": "EmptyLatentImage"},
+      "widgets_values": [512, 768, 1],
+      "color": "#333",
+      "bgcolor": "#444",
+      "title": "📐 [S2-STEP4] Image Size — 512x768 = portrait. 512x512 = square. Keep width+height ≤ 768 for 8GB VRAM"
+    },
+
+    {
+      "id": 15,
+      "type": "KSampler",
+      "pos": [800, 1280],
+      "size": {"0": 315, "1": 474},
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 101},
+        {"name": "positive", "type": "CONDITIONING", "link": 105},
+        {"name": "negative", "type": "CONDITIONING", "link": 106},
+        {"name": "latent_image", "type": "LATENT", "link": 107}
+      ],
+      "outputs": [{"name": "LATENT", "type": "LATENT", "links": [108], "slot_index": 0}],
+      "properties": {"Node name for S&R": "KSampler"},
+      "widgets_values": [
+        42,
+        "fixed",
+        20,
+        7,
+        "euler",
+        "normal",
+        1.0
+      ],
+      "color": "#333",
+      "bgcolor": "#444",
+      "title": "⚙️ [S2-STEP5] KSampler — steps=20 (quality/speed balance). cfg=7 (creativity). seed=42 (change for variety)"
+    },
+
+    {
+      "id": 16,
+      "type": "VAEDecode",
+      "pos": [1150, 1280],
+      "size": {"0": 140, "1": 46},
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {"name": "samples", "type": "LATENT", "link": 108},
+        {"name": "vae", "type": "VAE", "link": 104}
+      ],
+      "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": [109], "slot_index": 0}],
+      "properties": {"Node name for S&R": "VAEDecode"},
+      "color": "#333",
+      "bgcolor": "#444",
+      "title": "🔄 [S2-STEP6] VAE Decode — Converts AI latent data into a viewable image"
+    },
+
+    {
+      "id": 17,
+      "type": "LoadImage",
+      "pos": [1150, 1120],
+      "size": {"0": 315, "1": 314},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [110], "slot_index": 0},
+        {"name": "MASK", "type": "MASK", "links": null, "slot_index": 1}
+      ],
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["your_face_reference.jpg", "image"],
+      "color": "#333",
+      "bgcolor": "#444",
+      "title": "📷 [S2-STEP7] Load Face Image — Upload your face reference photo here. Use a clear front-facing photo!"
+    },
+
+    {
+      "id": 18,
+      "type": "ReActorFaceSwap",
+      "pos": [1500, 1120],
+      "size": {"0": 315, "1": 338},
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {"name": "input_image", "type": "IMAGE", "link": 109},
+        {"name": "source_image", "type": "IMAGE", "link": 110},
+        {"name": "face_model", "type": "FACE_MODEL", "link": null}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [111], "slot_index": 0},
+        {"name": "FACE_MODEL", "type": "FACE_MODEL", "links": null, "slot_index": 1}
+      ],
+      "properties": {"Node name for S&R": "ReActorFaceSwap"},
+      "widgets_values": [
+        true,
+        "inswapper_128.onnx",
+        "YOLOv5l",
+        "codeformer.pth",
+        1,
+        0.7,
+        "no",
+        "no",
+        "0",
+        "0",
+        1
+      ],
+      "color": "#2a1a4a",
+      "bgcolor": "#3d2a6b",
+      "title": "🔄 [S2-STEP8] ReActor FaceSwap — Requires ReActor custom node + inswapper_128.onnx model"
+    },
+
+    {
+      "id": 19,
+      "type": "SaveImage",
+      "pos": [1850, 1120],
+      "size": {"0": 420, "1": 440},
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 111}],
+      "properties": {"Node name for S&R": "SaveImage"},
+      "widgets_values": ["S2_FaceSwap_Output"],
+      "color": "#1a3a1a",
+      "bgcolor": "#2a5a2a",
+      "title": "💾 [S2-STEP9] Save Image — Output saved to ComfyUI/output/S2_FaceSwap_Output/"
+    },
+
+    {
+      "id": 20,
+      "type": "Note",
+      "pos": [20, 1850],
+      "size": {"0": 600, "1": 30},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": {"Node name for S&R": "Note"},
+      "widgets_values": ["⬇️ SECTION 3: FaceSwap + Pose Reference — This adds OpenPose ControlNet. Upload a pose reference image, extract the skeleton, then generate + swap face. Follow [S3-STEP1] through [S3-STEP10]"],
+      "color": "#162032",
+      "bgcolor": "#1e3048"
+    },
+
+    {
+      "id": 21,
+      "type": "CheckpointLoaderSimple",
+      "pos": [20, 1900],
+      "size": {"0": 315, "1": 98},
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [120, 121], "slot_index": 0},
+        {"name": "CLIP", "type": "CLIP", "links": [122, 123], "slot_index": 1},
+        {"name": "VAE", "type": "VAE", "links": [124], "slot_index": 2}
+      ],
+      "properties": {"Node name for S&R": "CheckpointLoaderSimple"},
+      "widgets_values": ["realisticVisionV60B1_v51VAE.safetensors"],
+      "color": "#222",
+      "bgcolor": "#333",
+      "title": "🔵 [S3-STEP1] Load Checkpoint — Same model as Section 2. Change to your preferred model."
+    },
+
+    {
+      "id": 22,
+      "type": "LoadImage",
+      "pos": [20, 2030],
+      "size": {"0": 315, "1": 314},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [125], "slot_index": 0},
+        {"name": "MASK", "type": "MASK", "links": null, "slot_index": 1}
+      ],
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["pose_reference_photo.jpg", "image"],
+      "color": "#333",
+      "bgcolor": "#444",
+      "title": "🖼️ [S3-STEP2] Load Pose Reference Image — Upload a photo with the pose you want to mimic"
+    },
+
+    {
+      "id": 23,
+      "type": "DWPreprocessor",
+      "pos": [360, 2030],
+      "size": {"0": 315, "1": 150},
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [{"name": "image", "type": "IMAGE", "link": 125}],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [126], "slot_index": 0},
+        {"name": "POSE_KEYPOINT", "type": "POSE_KEYPOINT", "links": null, "slot_index": 1}
+      ],
+      "properties": {"Node name for S&R": "DWPreprocessor"},
+      "widgets_values": ["enable", "enable", "enable", 512, 768],
+      "color": "#1a3a4a",
+      "bgcolor": "#2a5a6b",
+      "title": "🦴 [S3-STEP3] DWPose Preprocessor — Extracts skeleton/pose from your reference image (from comfyui_controlnet_aux)"
+    },
+
+    {
+      "id": 24,
+      "type": "PreviewImage",
+      "pos": [360, 2200],
+      "size": {"0": 315, "1": 250},
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 126}],
+      "properties": {"Node name for S&R": "PreviewImage"},
+      "title": "👀 [S3-STEP4] Preview Pose — Check that pose skeleton looks correct before generating"
+    },
+
+    {
+      "id": 25,
+      "type": "ControlNetLoader",
+      "pos": [700, 1900],
+      "size": {"0": 315, "1": 58},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [{"name": "CONTROL_NET", "type": "CONTROL_NET", "links": [127], "slot_index": 0}],
+      "properties": {"Node name for S&R": "ControlNetLoader"},
+      "widgets_values": ["control_v11p_sd15_openpose.pth"],
+      "color": "#1a3a4a",
+      "bgcolor": "#2a5a6b",
+      "title": "🎛️ [S3-STEP5] ControlNet Loader — Load the OpenPose ControlNet model. File goes in ComfyUI/models/controlnet/"
+    },
+
+    {
+      "id": 26,
+      "type": "CLIPTextEncode",
+      "pos": [700, 1980],
+      "size": {"0": 425, "1": 180},
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [{"name": "clip", "type": "CLIP", "link": 122}],
+      "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [128], "slot_index": 0}],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": ["beautiful woman, full body shot, professional photography, high quality, sharp focus, cinematic lighting, elegant clothing"],
+      "color": "#1a4400",
+      "bgcolor": "#234d00",
+      "title": "🟢 [S3-STEP6] Positive Prompt — Describe your desired image. The pose will come from the reference."
+    },
+
+    {
+      "id": 27,
+      "type": "CLIPTextEncode",
+      "pos": [700, 2180],
+      "size": {"0": 425, "1": 180},
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [{"name": "clip", "type": "CLIP", "link": 123}],
+      "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [129], "slot_index": 0}],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": ["ugly, deformed, blurry, bad anatomy, extra fingers, mutated hands, watermark, signature, low quality, worst quality, jpeg artifacts, missing limbs"],
+      "color": "#440000",
+      "bgcolor": "#6b0000",
+      "title": "🔴 [S3-STEP7] Negative Prompt — Prevents bad results. Keep these defaults."
+    },
+
+    {
+      "id": 28,
+      "type": "ControlNetApplyAdvanced",
+      "pos": [1150, 1900],
+      "size": {"0": 315, "1": 230},
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {"name": "positive", "type": "CONDITIONING", "link": 128},
+        {"name": "negative", "type": "CONDITIONING", "link": 129},
+        {"name": "control_net", "type": "CONTROL_NET", "link": 127},
+        {"name": "image", "type": "IMAGE", "link": 126}
+      ],
+      "outputs": [
+        {"name": "positive", "type": "CONDITIONING", "links": [130], "slot_index": 0},
+        {"name": "negative", "type": "CONDITIONING", "links": [131], "slot_index": 1}
+      ],
+      "properties": {"Node name for S&R": "ControlNetApplyAdvanced"},
+      "widgets_values": [1.0, 0.0, 1.0],
+      "color": "#1a3a4a",
+      "bgcolor": "#2a5a6b",
+      "title": "🔗 [S3-STEP8] Apply ControlNet — strength=1.0 (full pose control). Lower to 0.7 for looser interpretation."
+    },
+
+    {
+      "id": 29,
+      "type": "EmptyLatentImage",
+      "pos": [1150, 2150],
+      "size": {"0": 315, "1": 106},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "outputs": [{"name": "LATENT", "type": "LATENT", "links": [132], "slot_index": 0}],
+      "properties": {"Node name for S&R": "EmptyLatentImage"},
+      "widgets_values": [512, 768, 1],
+      "color": "#333",
+      "bgcolor": "#444",
+      "title": "📐 [S3] Image Size — Match this to your pose reference aspect ratio (512x768 for portrait)"
+    },
+
+    {
+      "id": 30,
+      "type": "KSampler",
+      "pos": [1500, 1900],
+      "size": {"0": 315, "1": 474},
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 120},
+        {"name": "positive", "type": "CONDITIONING", "link": 130},
+        {"name": "negative", "type": "CONDITIONING", "link": 131},
+        {"name": "latent_image", "type": "LATENT", "link": 132}
+      ],
+      "outputs": [{"name": "LATENT", "type": "LATENT", "links": [133], "slot_index": 0}],
+      "properties": {"Node name for S&R": "KSampler"},
+      "widgets_values": [123, "fixed", 25, 7.5, "dpmpp_2m", "karras", 1.0],
+      "color": "#333",
+      "bgcolor": "#444",
+      "title": "⚙️ [S3] KSampler — steps=25 (more quality for complex pose), dpmpp_2m+karras is good for realism"
+    },
+
+    {
+      "id": 31,
+      "type": "VAEDecode",
+      "pos": [1850, 1900],
+      "size": {"0": 140, "1": 46},
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {"name": "samples", "type": "LATENT", "link": 133},
+        {"name": "vae", "type": "VAE", "link": 124}
+      ],
+      "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": [134], "slot_index": 0}],
+      "properties": {"Node name for S&R": "VAEDecode"},
+      "title": "🔄 [S3] VAE Decode"
+    },
+
+    {
+      "id": 32,
+      "type": "LoadImage",
+      "pos": [1850, 1970],
+      "size": {"0": 315, "1": 314},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [135], "slot_index": 0},
+        {"name": "MASK", "type": "MASK", "links": null, "slot_index": 1}
+      ],
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["your_face_reference.jpg", "image"],
+      "color": "#333",
+      "bgcolor": "#444",
+      "title": "📷 [S3-STEP9] Load Face — Same face reference as Section 2, or a different one"
+    },
+
+    {
+      "id": 33,
+      "type": "ReActorFaceSwap",
+      "pos": [2000, 1900],
+      "size": {"0": 315, "1": 338},
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {"name": "input_image", "type": "IMAGE", "link": 134},
+        {"name": "source_image", "type": "IMAGE", "link": 135},
+        {"name": "face_model", "type": "FACE_MODEL", "link": null}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [136], "slot_index": 0},
+        {"name": "FACE_MODEL", "type": "FACE_MODEL", "links": null, "slot_index": 1}
+      ],
+      "properties": {"Node name for S&R": "ReActorFaceSwap"},
+      "widgets_values": [true, "inswapper_128.onnx", "YOLOv5l", "codeformer.pth", 1, 0.7, "no", "no", "0", "0", 1],
+      "color": "#2a1a4a",
+      "bgcolor": "#3d2a6b",
+      "title": "🔄 [S3-STEP10] ReActor FaceSwap — Applies your face to the pose-controlled generated image"
+    },
+
+    {
+      "id": 34,
+      "type": "SaveImage",
+      "pos": [2200, 1900],
+      "size": {"0": 420, "1": 440},
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 136}],
+      "properties": {"Node name for S&R": "SaveImage"},
+      "widgets_values": ["S3_PoseFaceSwap_Output"],
+      "color": "#1a3a1a",
+      "bgcolor": "#2a5a2a",
+      "title": "💾 [S3] Save — Output saved to ComfyUI/output/S3_PoseFaceSwap_Output/"
+    },
+
+    {
+      "id": 40,
+      "type": "Note",
+      "pos": [20, 2650],
+      "size": {"0": 600, "1": 30},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": {"Node name for S&R": "Note"},
+      "widgets_values": ["⬇️ SECTION 4: LoRA Usage (Text-to-Image) — ✅ BEST PLACE TO START! Simple and reliable. Follow [S4-STEP1] through [S4-STEP7]"],
+      "color": "#1b2838",
+      "bgcolor": "#2a3f55"
+    },
+
+    {
+      "id": 41,
+      "type": "CheckpointLoaderSimple",
+      "pos": [20, 2700],
+      "size": {"0": 315, "1": 98},
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [150], "slot_index": 0},
+        {"name": "CLIP", "type": "CLIP", "links": [151, 152], "slot_index": 1},
+        {"name": "VAE", "type": "VAE", "links": [153], "slot_index": 2}
+      ],
+      "properties": {"Node name for S&R": "CheckpointLoaderSimple"},
+      "widgets_values": ["dreamshaper_8.safetensors"],
+      "color": "#222",
+      "bgcolor": "#333",
+      "title": "🔵 [S4-STEP1] Load Base Model — File goes in ComfyUI/models/checkpoints/. Try dreamshaper_8 or realisticVision."
+    },
+
+    {
+      "id": 42,
+      "type": "LoraLoader",
+      "pos": [20, 2820],
+      "size": {"0": 315, "1": 126},
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 150},
+        {"name": "clip", "type": "CLIP", "link": 151}
+      ],
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [154], "slot_index": 0},
+        {"name": "CLIP", "type": "CLIP", "links": [155], "slot_index": 1}
+      ],
+      "properties": {"Node name for S&R": "LoraLoader"},
+      "widgets_values": ["your_lora_file.safetensors", 0.8, 0.8],
+      "color": "#2a1a4a",
+      "bgcolor": "#3d2a6b",
+      "title": "⚡ [S4-STEP2] LoRA Loader — 📁 Place LoRA in ComfyUI/models/loras/ then select here. strength=0.8 is safe default. Lower for subtlety."
+    },
+
+    {
+      "id": 43,
+      "type": "Note",
+      "pos": [345, 2820],
+      "size": {"0": 350, "1": 126},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": {"Node name for S&R": "Note"},
+      "widgets_values": ["💡 LoRA TIPS:\n• Add more LoraLoader nodes for multiple LoRAs\n• Keep total LoRA strength ≤ 1.5 combined\n• Use trigger words in your positive prompt\n• Strength 0.5-0.9 is the sweet spot\n• You can chain: Model→LoRA1→LoRA2→LoRA3"],
+      "color": "#2a1a4a",
+      "bgcolor": "#3d2a6b"
+    },
+
+    {
+      "id": 44,
+      "type": "CLIPTextEncode",
+      "pos": [700, 2700],
+      "size": {"0": 425, "1": 200},
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [{"name": "clip", "type": "CLIP", "link": 155}],
+      "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [156], "slot_index": 0}],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": ["YOUR_LORA_TRIGGER_WORD, masterpiece, best quality, 1girl, beautiful face, detailed eyes, photorealistic, professional photography, soft lighting, bokeh background"],
+      "color": "#1a4400",
+      "bgcolor": "#234d00",
+      "title": "🟢 [S4-STEP3] Positive Prompt — ⚠️ IMPORTANT: Add your LoRA trigger word at the start!"
+    },
+
+    {
+      "id": 45,
+      "type": "CLIPTextEncode",
+      "pos": [700, 2920],
+      "size": {"0": 425, "1": 180},
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [{"name": "clip", "type": "CLIP", "link": 152}],
+      "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [157], "slot_index": 0}],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": ["ugly, deformed, blurry, bad anatomy, watermark, signature, low quality, worst quality, poorly drawn face, extra limbs, text, cropped"],
+      "color": "#440000",
+      "bgcolor": "#6b0000",
+      "title": "🔴 [S4-STEP4] Negative Prompt — Keeps outputs clean. Use with embedding:badhandv4 if you have it."
+    },
+
+    {
+      "id": 46,
+      "type": "EmptyLatentImage",
+      "pos": [1150, 2700],
+      "size": {"0": 315, "1": 106},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "outputs": [{"name": "LATENT", "type": "LATENT", "links": [158], "slot_index": 0}],
+      "properties": {"Node name for S&R": "EmptyLatentImage"},
+      "widgets_values": [512, 512, 1],
+      "color": "#333",
+      "bgcolor": "#444",
+      "title": "📐 [S4-STEP5] Image Size — 512x512 recommended. Use 512x768 for portrait. Max 768x768 on 8GB VRAM"
+    },
+
+    {
+      "id": 47,
+      "type": "KSampler",
+      "pos": [1150, 2820],
+      "size": {"0": 315, "1": 474},
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 154},
+        {"name": "positive", "type": "CONDITIONING", "link": 156},
+        {"name": "negative", "type": "CONDITIONING", "link": 157},
+        {"name": "latent_image", "type": "LATENT", "link": 158}
+      ],
+      "outputs": [{"name": "LATENT", "type": "LATENT", "links": [159], "slot_index": 0}],
+      "properties": {"Node name for S&R": "KSampler"},
+      "widgets_values": [
+        42,
+        "randomize",
+        20,
+        7,
+        "euler",
+        "normal",
+        1.0
+      ],
+      "color": "#333",
+      "bgcolor": "#444",
+      "title": "⚙️ [S4-STEP6] KSampler — seed=randomize (new image each time). steps=20 is good. cfg=7 is balanced."
+    },
+
+    {
+      "id": 48,
+      "type": "VAEDecode",
+      "pos": [1500, 2820],
+      "size": {"0": 140, "1": 46},
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {"name": "samples", "type": "LATENT", "link": 159},
+        {"name": "vae", "type": "VAE", "link": 153}
+      ],
+      "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": [160], "slot_index": 0}],
+      "properties": {"Node name for S&R": "VAEDecode"},
+      "title": "🔄 [S4] VAE Decode"
+    },
+
+    {
+      "id": 49,
+      "type": "SaveImage",
+      "pos": [1500, 2880],
+      "size": {"0": 420, "1": 440},
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 160}],
+      "properties": {"Node name for S&R": "SaveImage"},
+      "widgets_values": ["S4_LoRA_Output"],
+      "color": "#1a3a1a",
+      "bgcolor": "#2a5a2a",
+      "title": "💾 [S4-STEP7] Save Image — Saved to ComfyUI/output/S4_LoRA_Output/"
+    },
+
+    {
+      "id": 50,
+      "type": "Note",
+      "pos": [20, 3300],
+      "size": {"0": 600, "1": 60},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": {"Node name for S&R": "Note"},
+      "widgets_values": ["⬇️ SECTION 5: GIF / Animation (AnimateDiff) — Creates short looping GIFs. Requires ComfyUI-AnimateDiff-Evolved + VideoHelperSuite.\n⚠️ VRAM NOTE: Keep frames=16 max. Use 512x512 only. This is the most VRAM-intensive section."],
+      "color": "#1a0533",
+      "bgcolor": "#2a0a4a"
+    },
+
+    {
+      "id": 51,
+      "type": "CheckpointLoaderSimple",
+      "pos": [20, 3390],
+      "size": {"0": 315, "1": 98},
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [170], "slot_index": 0},
+        {"name": "CLIP", "type": "CLIP", "links": [171, 172], "slot_index": 1},
+        {"name": "VAE", "type": "VAE", "links": [173], "slot_index": 2}
+      ],
+      "properties": {"Node name for S&R": "CheckpointLoaderSimple"},
+      "widgets_values": ["dreamshaper_8.safetensors"],
+      "color": "#222",
+      "bgcolor": "#333",
+      "title": "🔵 [S5-STEP1] Load Model — Use SD 1.5 based models only (dreamshaper_8, realisticVision, etc). NO SDXL!"
+    },
+
+    {
+      "id": 52,
+      "type": "ADE_AnimateDiffLoaderGen1",
+      "pos": [20, 3510],
+      "size": {"0": 315, "1": 222},
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 170},
+        {"name": "context_options", "type": "CONTEXT_OPTIONS", "link": null},
+        {"name": "motion_lora", "type": "MOTION_LORA", "link": null},
+        {"name": "ad_settings", "type": "AD_SETTINGS", "link": null},
+        {"name": "ad_keyframes", "type": "AD_KEYFRAMES", "link": null},
+        {"name": "sample_settings", "type": "SAMPLE_SETTINGS", "link": null},
+        {"name": "scale_multival", "type": "MULTIVAL", "link": null},
+        {"name": "effect_multival", "type": "MULTIVAL", "link": null}
+      ],
+      "outputs": [{"name": "MODEL", "type": "MODEL", "links": [174], "slot_index": 0}],
+      "properties": {"Node name for S&R": "ADE_AnimateDiffLoaderGen1"},
+      "widgets_values": ["mm_sd_v15_v2.ckpt", "sqrt_linear (AnimateDiff)"],
+      "color": "#330a5e",
+      "bgcolor": "#4a1080",
+      "title": "🎬 [S5-STEP2] AnimateDiff Loader — Load motion model. Place in AnimateDiff-Evolved/models/. 'mm_sd_v15_v2.ckpt' is recommended."
+    },
+
+    {
+      "id": 53,
+      "type": "CLIPTextEncode",
+      "pos": [360, 3390],
+      "size": {"0": 425, "1": 180},
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [{"name": "clip", "type": "CLIP", "link": 171}],
+      "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [175], "slot_index": 0}],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": ["beautiful woman walking in a flower garden, flowing dress, golden hour lighting, cinematic, smooth animation, high quality"],
+      "color": "#1a4400",
+      "bgcolor": "#234d00",
+      "title": "🟢 [S5-STEP3] Positive Prompt — Describe the scene. Include motion words like 'walking', 'flowing', 'waving'."
+    },
+
+    {
+      "id": 54,
+      "type": "CLIPTextEncode",
+      "pos": [360, 3590],
+      "size": {"0": 425, "1": 180},
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [{"name": "clip", "type": "CLIP", "link": 172}],
+      "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [176], "slot_index": 0}],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": ["ugly, deformed, blurry, watermark, bad quality, static, frozen, flickering, jittery motion, worst quality, low quality"],
+      "color": "#440000",
+      "bgcolor": "#6b0000",
+      "title": "🔴 [S5-STEP4] Negative Prompt — 'static, frozen, flickering' helps AnimateDiff produce smoother motion"
+    },
+
+    {
+      "id": 55,
+      "type": "EmptyLatentImage",
+      "pos": [800, 3390],
+      "size": {"0": 315, "1": 106},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "outputs": [{"name": "LATENT", "type": "LATENT", "links": [177], "slot_index": 0}],
+      "properties": {"Node name for S&R": "EmptyLatentImage"},
+      "widgets_values": [512, 512, 16],
+      "color": "#333",
+      "bgcolor": "#444",
+      "title": "📐 [S5-STEP5] Frame Canvas — Width=512, Height=512, Batch=16 frames. ⚠️ MAX 16 frames on 8GB VRAM! Use 8 frames if you get OOM errors."
+    },
+
+    {
+      "id": 56,
+      "type": "KSampler",
+      "pos": [800, 3520],
+      "size": {"0": 315, "1": 474},
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 174},
+        {"name": "positive", "type": "CONDITIONING", "link": 175},
+        {"name": "negative", "type": "CONDITIONING", "link": 176},
+        {"name": "latent_image", "type": "LATENT", "link": 177}
+      ],
+      "outputs": [{"name": "LATENT", "type": "LATENT", "links": [178], "slot_index": 0}],
+      "properties": {"Node name for S&R": "KSampler"},
+      "widgets_values": [
+        42,
+        "fixed",
+        20,
+        7,
+        "euler",
+        "normal",
+        1.0
+      ],
+      "color": "#333",
+      "bgcolor": "#444",
+      "title": "⚙️ [S5-STEP6] KSampler — steps=20 is recommended for AnimateDiff. More steps = slower but smoother."
+    },
+
+    {
+      "id": 57,
+      "type": "VAEDecode",
+      "pos": [1150, 3520],
+      "size": {"0": 140, "1": 46},
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {"name": "samples", "type": "LATENT", "link": 178},
+        {"name": "vae", "type": "VAE", "link": 173}
+      ],
+      "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": [179], "slot_index": 0}],
+      "properties": {"Node name for S&R": "VAEDecode"},
+      "title": "🔄 [S5] VAE Decode — Converts all 16 frames from latent to image"
+    },
+
+    {
+      "id": 58,
+      "type": "ADE_AnimateDiffCombine",
+      "pos": [1320, 3390],
+      "size": {"0": 315, "1": 300},
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 179}],
+      "outputs": [{"name": "GIF", "type": "GIF", "links": null, "slot_index": 0}],
+      "properties": {"Node name for S&R": "ADE_AnimateDiffCombine"},
+      "widgets_values": [8, 0, true, "S5_Animation_Output", "image/gif", true],
+      "color": "#330a5e",
+      "bgcolor": "#4a1080",
+      "title": "🎞️ [S5-STEP7] Combine Frames to GIF — fps=8 (smooth enough). Output saved to ComfyUI/output/. Try fps=12 for smoother GIFs."
+    },
+
+    {
+      "id": 59,
+      "type": "Note",
+      "pos": [1320, 3720],
+      "size": {"0": 400, "1": 200},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": {"Node name for S&R": "Note"},
+      "widgets_values": ["🎞️ AnimateDiff Settings Guide:\n\n• frames=8: Fast, low VRAM, choppy\n• frames=16: Good balance ✅ (recommended)\n• frames=24: High VRAM risk on 8GB\n\n• fps=8: Smooth enough for most GIFs\n• fps=12: Smoother but larger file\n\n• If you get Out of Memory:\n  → Reduce to 8 frames\n  → Reduce to 512x512\n  → Close other apps\n  → Add --lowvram launch flag\n\n• Motion LoRAs (PanLeft, ZoomIn, etc.)\n  go in AnimateDiff-Evolved/loras/"],
+      "color": "#1a0533",
+      "bgcolor": "#2a0a4a"
+    },
+
+    {
+      "id": 60,
+      "type": "Note",
+      "pos": [1650, 2700],
+      "size": {"0": 350, "1": 400},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": {"Node name for S&R": "Note"},
+      "widgets_values": ["⚙️ KSampler Quick Reference:\n\nSEED:\n• Fixed = same image each time\n• Randomize = new image each time\n\nSTEPS:\n• 15 = fast but lower quality\n• 20 = good balance ✅\n• 30 = slower but more detail\n\nCFG SCALE:\n• 5-6 = more creative/loose\n• 7-8 = balanced ✅\n• 10-12 = very prompt-adherent\n\nSAMPLER + SCHEDULER:\n• euler + normal = fast, good ✅\n• dpmpp_2m + karras = high quality\n• dpmpp_sde + karras = detailed\n\nDENOISE:\n• 1.0 = full generation (txt2img)\n• 0.5-0.8 = img2img variation"],
+      "color": "#1b2838",
+      "bgcolor": "#2a3f55"
+    }
+
+  ],
+
+  "links": [
+    [101, 10, 0, 15, 0, "MODEL"],
+    [102, 10, 1, 12, 0, "CLIP"],
+    [103, 10, 1, 13, 0, "CLIP"],
+    [104, 10, 2, 16, 1, "VAE"],
+    [105, 12, 0, 15, 1, "CONDITIONING"],
+    [106, 13, 0, 15, 2, "CONDITIONING"],
+    [107, 14, 0, 15, 3, "LATENT"],
+    [108, 15, 0, 16, 0, "LATENT"],
+    [109, 16, 0, 18, 0, "IMAGE"],
+    [110, 17, 0, 18, 1, "IMAGE"],
+    [111, 18, 0, 19, 0, "IMAGE"],
+
+    [120, 21, 0, 30, 0, "MODEL"],
+    [121, 21, 0, 28, 0, "MODEL"],
+    [122, 21, 1, 26, 0, "CLIP"],
+    [123, 21, 1, 27, 0, "CLIP"],
+    [124, 21, 2, 31, 1, "VAE"],
+    [125, 22, 0, 23, 0, "IMAGE"],
+    [126, 23, 0, 24, 0, "IMAGE"],
+    [127, 25, 0, 28, 2, "CONTROL_NET"],
+    [128, 26, 0, 28, 0, "CONDITIONING"],
+    [129, 27, 0, 28, 1, "CONDITIONING"],
+    [130, 28, 0, 30, 1, "CONDITIONING"],
+    [131, 28, 1, 30, 2, "CONDITIONING"],
+    [132, 29, 0, 30, 3, "LATENT"],
+    [133, 30, 0, 31, 0, "LATENT"],
+    [134, 31, 0, 33, 0, "IMAGE"],
+    [135, 32, 0, 33, 1, "IMAGE"],
+    [136, 33, 0, 34, 0, "IMAGE"],
+
+    [150, 41, 0, 42, 0, "MODEL"],
+    [151, 41, 1, 42, 1, "CLIP"],
+    [152, 41, 1, 45, 0, "CLIP"],
+    [153, 41, 2, 48, 1, "VAE"],
+    [154, 42, 0, 47, 0, "MODEL"],
+    [155, 42, 1, 44, 0, "CLIP"],
+    [156, 44, 0, 47, 1, "CONDITIONING"],
+    [157, 45, 0, 47, 2, "CONDITIONING"],
+    [158, 46, 0, 47, 3, "LATENT"],
+    [159, 47, 0, 48, 0, "LATENT"],
+    [160, 48, 0, 49, 0, "IMAGE"],
+
+    [170, 51, 0, 52, 0, "MODEL"],
+    [171, 51, 1, 53, 0, "CLIP"],
+    [172, 51, 1, 54, 0, "CLIP"],
+    [173, 51, 2, 57, 1, "VAE"],
+    [174, 52, 0, 56, 0, "MODEL"],
+    [175, 53, 0, 56, 1, "CONDITIONING"],
+    [176, 54, 0, 56, 2, "CONDITIONING"],
+    [177, 55, 0, 56, 3, "LATENT"],
+    [178, 56, 0, 57, 0, "LATENT"],
+    [179, 57, 0, 58, 0, "IMAGE"]
+  ],
+
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.5,
+      "offset": [0, 0]
+    },
+    "groupNodes": {}
+  },
+  "version": 0.4
+}
